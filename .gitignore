@@ -1,0 +1,16 @@
+kdtree
+*.svg
+kd_tree_first_visualiziation_examples.ipynb
+kd_tree_test.ipynb
+try_to_plot_tree_structure.ipynb
+*.pyc
+*.zip
+*.png
+*.log
+*.tex
+*.gif
+data/100_test_data_pts/
+data/data_30.01.2024/X_test_custom_lin_reg.pkl
+data/data_30.01.2024/
+data/mackey_glass_5000_Tr_instances/
+plots/
