@@ -145,6 +145,10 @@ def regression_plot_gaussian(x_test, gaussian, plot_folder: str, min_data, max_d
         vmin = np.min(mean)
         step = (vmax - vmin) / 40
         contour_lvls_mean = np.arange(start=vmin, stop=vmax+step, step=step, )
+
+    if plot_every_nth_contline < 1:
+        plot_every_nth_contline = -1  # plot every given contour line
+
     ax = varianz_plot_2d_input(x_test, mean, plot_folder, min_data, max_data,
                                y_label=r'$\mu$', return_axes=True, contour_lvls=contour_lvls_mean,
                                cmap_name=cmap_name)
@@ -153,7 +157,8 @@ def regression_plot_gaussian(x_test, gaussian, plot_folder: str, min_data, max_d
     # contour_line = ax.tricontour(x_test[:, 0], x_test[:, 1], mean,
     #                              levels=contour_lvls_mean[::plot_every_nth_contline], colors='w',)  # black contour line
 
-    plot_2d_contour_lines(ax, x_test, mean, contour_lvls_mean, plot_every_nth_contline, cmap_name=cmap_name)
+    if plot_every_nth_contline > 0:
+        plot_2d_contour_lines(ax, x_test, mean, contour_lvls_mean, plot_every_nth_contline, cmap_name=cmap_name)
     # set major ticks of x and y axis to be equal
     set_major_ticks(ax)
 
@@ -173,7 +178,8 @@ def regression_plot_gaussian(x_test, gaussian, plot_folder: str, min_data, max_d
     ax = varianz_plot_2d_input(x_test, var, plot_folder, min_data, max_data,
                                y_label=r'$\sigma^2$', return_axes=True, contour_lvls=contour_lvls_var,
                                cmap_name='plasma')
-    plot_2d_contour_lines(ax, x_test, var, contour_lvls_mean, plot_every_nth_contline, cmap_name=cmap_name)
+    if plot_every_nth_contline > 0:
+        plot_2d_contour_lines(ax, x_test, var, contour_lvls_mean, plot_every_nth_contline, cmap_name=cmap_name)
 
     # set major ticks of x and y axis to be equal
     set_major_ticks(ax)
@@ -182,13 +188,61 @@ def regression_plot_gaussian(x_test, gaussian, plot_folder: str, min_data, max_d
     custom_safefig(fig, save_path_var)
 
 
-def set_major_ticks(ax: plt.Axes):
-    xlim, ylim = ax.get_xlim(), ax.get_ylim()
-    ax.set_xticks(np.arange(xlim[0], xlim[1]+1, 1))
-    ax.set_yticks(np.arange(ylim[0], ylim[1]+1, 1))
+def set_major_ticks(ax: plt.Axes, x_axis: bool = True, y_axis: bool = True,
+                    xtol: float = 0.1,
+                    ytol: float = 0.1,  max_ticks: int = 5,):
+    """ Set major ticks for the x and y axis of the plot.
+
+    :param ax: Axes of the plot
+    :type ax: plt.Axes
+    :param x_axis: If True, set major ticks for the x axis
+    :type x_axis: bool
+    :param y_axis: If True, set major ticks for the y axis
+    :type y_axis: bool
+    :param xtol: Tolerance for the x axis
+    :type xtol: float
+    :param ytol: Tolerance for the y axis
+    :type ytol: float
+    """
+    # xlim, ylim = ax.get_xlim(), ax.get_ylim()
+    # # add tolerance
+
+    # if x_axis:
+    #     x_range = np.arange(xlim[0] - xtol, xlim[1] + xtol+1, 1)
+    #     # round depanding on the range
+    #     if x_range[-1] - x_range[0] < 10:
+    #         x_range = np.round(x_range, 0)
+    #         x_range = np.arange(x_range[0], x_range[-1]+1, 0.5)
+
+    #     # remove ticks which are outside the range
+    #     x_range = x_range[(x_range >= xlim[0]) & (x_range <= xlim[1])]
+    #     ax.set_xticks(x_range)
+
+    # if y_axis:
+    #     y_range = np.arange(ylim[0]-ytol, ylim[1] + ytol+1, 1)
+    #     if y_range[-1] - y_range[0] < 10:
+    #         y_range = np.round(y_range, 0)
+    #         y_range = np.arange(y_range[0], y_range[-1]+1, 0.5)
+
+    #     # remove ticks which are outside the range
+    #     y_range = y_range[(y_range >= ylim[0]) & (y_range <= ylim[1])]
+
+    #     # remove ticks if more
+    #     ax.set_yticks(y_range)
+
+    locator = ticker.MaxNLocator(prune='both', nbins=5)
+    ax.yaxis.set_major_locator(locator)
+    ax.xaxis.set_major_locator(locator)
 
 
 def set_colorbar_max_ticks(cbar: matplotlib.colorbar.Colorbar, max_ticks: int = 5):
+    """ Set the maximum number of ticks for the colorbar.
+
+    :param cbar: Colorbar of the plot
+    :type cbar: matplotlib.colorbar.Colorbar
+    :param max_ticks: Maximum number of ticks for the colorbar
+    :type max_ticks: int
+    """
     tick_locator = ticker.MaxNLocator(nbins=max_ticks)
     cbar.locator = tick_locator
     cbar.update_ticks()
@@ -235,10 +289,21 @@ def varianz_plot_2d_input(x_test, varianz, plot_folder: str,
     cmap, norm = get_wasserstein_plot_settings(
         vmin=vmin, vmax=vmax,
         cmap_name=cmap_name,)
-    if np.max(varianz) < vmax or np.isclose(np.max(varianz), vmax, ):
+
+    is_lower_than_max = np.max(varianz) < vmax or np.isclose(np.max(varianz), vmax, )
+    is_higher_than_min = np.min(varianz) > vmin or np.isclose(np.min(varianz), vmin, )
+
+    # are both bounds respected?
+    if is_lower_than_max and is_higher_than_min:
         extend = 'neither'
-    else:
+    # are both bounds violated?
+    elif not is_lower_than_max and not is_higher_than_min:
+        extend = 'both'
+    # only the upper bound is violated
+    elif not is_lower_than_max and is_higher_than_min:
         extend = 'max'
+    else:
+        extend = 'min'
 
     contour_plot = axes.tricontourf(x_test[:, 0], x_test[:, 1], varianz,
                                     levels=contour_lvls,
@@ -256,9 +321,10 @@ def varianz_plot_2d_input(x_test, varianz, plot_folder: str,
     divider = make_axes_locatable(axes)
     cax = divider.append_axes("right", size="5%", pad=0.15)
 
-    cbar = fig.colorbar(contour_plot, cax=cax,)
-    set_colorbar_max_ticks(cbar, max_ticks=5)
+    cbar = fig.colorbar(contour_plot, cax=cax, extend=extend)
+    # set_colorbar_max_ticks(cbar, max_ticks=5)
     cbar.set_label(y_label)
+    cbar.ax.locator_params(nbins=5)
 
     if return_axes:
         return axes
@@ -269,7 +335,7 @@ def varianz_plot_2d_input(x_test, varianz, plot_folder: str,
 def get_wasserstein_plot_settings(vmin=None,
                                   vmax=None,
                                   cmap_name='viridis',
-                                  set_under_color='black',
+                                  set_under_color='steelblue',
                                   set_over_color='gold',):
     cmap = plt.get_cmap(cmap_name)
     # if vmin and vmax are set, normalize the color map
@@ -561,18 +627,29 @@ def generate_gif(folder_name,
     # if file ends with some image type, add it to the list
     image_files = [file for file in all_files if file.endswith(image_types)]
 
+    # remove image type and get str before the separation string
+    cutted_files = [file.split('.') for file in image_files]
+
+    file_typ = cutted_files[0][1]
+
+    # seperate file name from index with separation string
+    cutted_filenames = [file[0].split(separation_str) for file in cutted_files]
+
+    # check which part is the number
+    number_idx = [idx for idx, name_part in enumerate(cutted_filenames[0]) if name_part.isdigit()][0]
+
     # get files which start with a number
-    image_files = [file for file in image_files if file.split(separation_str)[0].isdigit()]
+    # image_files = [file for file in image_files if file.split(separation_str)[number_idx].isdigit()]
 
-    # sort files according to their number bevor the separation string
-    sorted_files = sorted(image_files, key=lambda x: int(x.split(separation_str)[0]))
-
+    # sort files according to their index
+    sorted_files = sorted(cutted_filenames, key=lambda x: int(x[number_idx]))
     #  sorted_files = sorted(image_files, key=lambda x: int(x.split(separation_str)[0]))
 
     # get every plot in target folder (files should be numerated and sorted like 1.png, 2.png...)
     for file in sorted_files:
-        if file.endswith(image_types):
-            img_paths.append(os.path.join(folder_name, file))
+        if file_typ.endswith(image_types):
+            file = file[0]+'_' + file[1] + '.' + file_typ
+            img_paths.append(os.path.join(folder_name, file,))
 
     frames = []
     for i in img_paths:
@@ -585,6 +662,9 @@ def generate_gif(folder_name,
         frames.append(img)
         if verbose:
             print(i + " added.")
+
+    if len(frames) == 0:
+        raise ValueError("No images found in folder.")
 
     # save GIF in folder
     frames[0].save(os.path.join(folder_name, file_name + '.gif'), format='GIF', append_images=frames[1:],

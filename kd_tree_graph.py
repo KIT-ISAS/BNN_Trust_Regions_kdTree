@@ -1,7 +1,7 @@
 """ Visualize a KDTree as a binary tree using Graphviz. """
 
 from dataclasses import dataclass, field
-from lib2to3.pytree import convert
+# from lib2to3.pytree import convert
 import os
 import re
 import typing
@@ -236,6 +236,7 @@ class KDTreeSplitPlanes:
 
 @dataclass
 class KDTreeGraph:
+    """ Class to convert a KDTree to a Graphviz representation for visualization."""
     kdtree: KDTree
 
     dot_graph: graphviz.Digraph = None
@@ -445,19 +446,19 @@ class KDTreeGraph:
         self.split_labels_list = split_labels_list
         self.leaf_labels_list = leaf_label_list
 
-    def save_graph(self, file_name, directory='./', format='svg'):
+    def save_graph(self, file_name, directory='./', file_format='svg'):
         """ Save the graph to a file."""
         if self.dot_graph is None:
             raise ValueError('No graph to save. Call kdtree_to_graphviz first.')
 
-        self.dot_graph.render(file_name, directory=directory, format=format)
+        self.dot_graph.render(file_name, directory=directory, format=file_format)
 
     def save_graph_as_tex(self, directory: str,):
         """ not necessary for this project. usepackage{dot2texi} can be used in LaTeX."""
 
         # https://dot2tex.readthedocs.io/en/latest/module_guide.html#using-dot2tex-as-a-module
         texcode = dot2tex.dot2tex(self.dot_graph.source, format='tikz', codeonly=True, crop=True, pad='0.05')
-        with open(os.path.join(directory, 'kdtree.tex'), 'w') as f:
+        with open(os.path.join(directory, 'kdtree.tex'), 'w', encoding='utf-8') as f:
             f.write(texcode)
 
         # logstream = dot2tex.get_logstream()
@@ -569,7 +570,8 @@ def convert_to_regular(subscripted_str):
     return regular_str
 
 
-if __name__ == '__main__':
+def test_kd_graph():
+    """ Test the KDTreeGraph class."""
     # Sample data
     np.random.seed(0)
     data = np.random.rand(20, 2)
@@ -594,7 +596,7 @@ if __name__ == '__main__':
 
     kd_graph = KDTreeGraph(kdtree)
     kd_graph.kdtree_to_graphviz()
-    kd_graph.save_graph(file_name, directory=directory, format='svg')
+    kd_graph.save_graph(file_name, directory=directory, file_format='svg')
     # kd_graph.print_graph_source()
 
     region_labels = kd_graph.get_leaf_labels()
@@ -604,3 +606,7 @@ if __name__ == '__main__':
     print(f'Region labels: {region_labels}')
     print(f'Split points: {split_points}')
     print(f'Split labels: {split_labels}')
+
+
+if __name__ == '__main__':
+    test_kd_graph()

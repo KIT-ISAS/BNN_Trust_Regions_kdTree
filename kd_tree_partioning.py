@@ -11,6 +11,8 @@ import numpy as np
 from prettytable import PrettyTable
 from scipy.spatial import KDTree
 
+import train_moon
+
 
 @dataclass
 class KDTreePartitions:
@@ -315,6 +317,7 @@ def plot_partitions(axes: plt.Axes,
                     accept_stat_per_region: np.ndarray = None,
                     hatch_type: str = 'x',
                     region_labels: typing.List[str] = None,
+                    plot_region_labels: bool = True,
                     ) -> plt.Axes:
     """
     Plot the space partitions of a KD tree on the given axes.
@@ -368,11 +371,12 @@ def plot_partitions(axes: plt.Axes,
 
         axes.add_patch(rect)
 
-        # add region label
-        if region_labels[idx] is not None:
-            axes.text((space_partitions.mins[idx][0] + space_partitions.maxes[idx][0]) / 2,
-                      (space_partitions.mins[idx][1] + space_partitions.maxes[idx][1]) / 2,
-                      region_labels[idx], ha='center', va='center')
+        if plot_region_labels:
+            # add region label
+            if region_labels[idx] is not None:
+                axes.text((space_partitions.mins[idx][0] + space_partitions.maxes[idx][0]) / 2,
+                          (space_partitions.mins[idx][1] + space_partitions.maxes[idx][1]) / 2,
+                          region_labels[idx], ha='center', va='center')
 
     return axes
 

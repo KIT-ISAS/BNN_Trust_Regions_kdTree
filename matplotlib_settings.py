@@ -2,6 +2,7 @@
 import typing
 
 import matplotlib.pyplot as plt
+from mpl_toolkits.axes_grid1.inset_locator import TransformedBbox, BboxPatch, BboxConnector
 
 
 def init_settings(use_tex: bool = False,
@@ -96,6 +97,57 @@ def init_settings(use_tex: bool = False,
     # set LaTeX preamble
     if use_tex:
         plt.rc('text.latex', preamble=r'\usepackage{amsmath}')
+
+
+# from mpl_toolkits.axes_grid1.inset_locator import mark_inset
+
+def mark_inset(parent_axes, inset_axes, loc1=1, loc2=2, loc11=None, loc22=None, **kwargs):
+    """ Modified version of mark_inset from mpl_toolkits.axes_grid1.inset_locator 
+
+    The original version of mark_inset does only allow to connect the same corners of the inset and the parent axes.
+    Eg., if loc1 = 1, then a connecting line is drawn between the lower left corner of the inset and the lower left corner of the parent axes.
+
+    This version allows to connect different corners of the inset and the parent axes.
+    Eg., if loc1 = 1 and loc11 = 2, then a connecting line is drawn between the lower left corner of the inset and the upper right corner of the parent axes.
+
+    This function is compatible with the original version of mark_inset and can be used as a drop-in replacement.
+    If no loc11 and loc22 are provided, the function behaves like the original version.
+
+    :param parent_axes: The parent axes.
+    :type parent_axes: matplotlib.axes.Axes
+    :param inset_axes: The inset axes.
+    :type inset_axes: matplotlib.axes.Axes
+    :param loc1: The location of the inset axes.
+    :type loc1: int in {1, 2, 3, 4}
+    :param loc2: The location of the parent axes.
+    :type loc2: int in {1, 2, 3, 4}
+    :param loc11: The location of the inset axes.
+    :type loc11: int in {1, 2, 3, 4}
+    :param loc22: The location of the parent axes.
+    :type loc22: int in {1, 2, 3, 4}                
+    """
+
+    if loc11 is None:
+
+        loc11 = loc1
+    if loc22 is None:
+        loc22 = loc2
+
+    rect = TransformedBbox(inset_axes.viewLim, parent_axes.transData)
+
+    pp = BboxPatch(rect,
+                   #    fill=False,
+                   **kwargs)
+    parent_axes.add_patch(pp)
+
+    p1 = BboxConnector(inset_axes.bbox, rect, loc1=loc1, loc2=loc11, **kwargs)
+    inset_axes.add_patch(p1)
+    p1.set_clip_on(False)
+    p2 = BboxConnector(inset_axes.bbox, rect, loc1=loc2, loc2=loc22, **kwargs)
+    inset_axes.add_patch(p2)
+    p2.set_clip_on(False)
+
+    return pp, p1, p2
 
 
 def scale_figsize(fig_width: float, scaling_factor: float = 1.0, height_to_width_ratio: float = 0.75) -> typing.List[float]:
