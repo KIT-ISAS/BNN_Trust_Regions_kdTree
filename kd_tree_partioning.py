@@ -1,17 +1,15 @@
 # pylint: disable=redefined-outer-name
-""" KD Tree partitioning for visualization of regions in input space and their local errors"""
+"""KD Tree partitioning for visualization of regions in input space and their local errors"""
 
-from dataclasses import dataclass
 import typing
+from dataclasses import dataclass
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1 import make_axes_locatable
 import numpy as np
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 from prettytable import PrettyTable
 from scipy.spatial import KDTree
-
-import train_moon
 
 
 @dataclass
@@ -26,6 +24,7 @@ class KDTreePartitions:
     :ivar indices: The indices of the data points within each partition.
     :vartype indices: List[np.ndarray]
     """
+
     mins: typing.List[np.ndarray]
     maxes: typing.List[np.ndarray]
     indices: typing.List[np.ndarray]
@@ -49,7 +48,7 @@ def get_nearest_neighbor(new_point, kdtree: KDTree) -> int:
 
 
 def get_partition_index(nearest_index: int, space_partitions: KDTreePartitions) -> int:
-    """ Get the index of the partition containing the nearest neighbor.
+    """Get the index of the partition containing the nearest neighbor.
 
     :param nearest_index: The index of the nearest neighbor.
     :type nearest_index: int
@@ -62,15 +61,16 @@ def get_partition_index(nearest_index: int, space_partitions: KDTreePartitions) 
     for partition_idx, partition in enumerate(space_partitions.indices):
         if nearest_index in partition:
             return partition_idx
-    raise ValueError('Nearest index not found in any partition')
+    raise ValueError("Nearest index not found in any partition")
 
 
-def get_partition_vecorized(new_points: np.ndarray,  kdtree: KDTree,
-                            space_partitions: KDTreePartitions) -> np.ndarray:
-    """ Get the index of the partition containing the nearest neighbor.
+def get_partition_vecorized(
+    new_points: np.ndarray, kdtree: KDTree, space_partitions: KDTreePartitions
+) -> np.ndarray:
+    """Get the index of the partition containing the nearest neighbor.
     If point is outside of min or max range of the KD tree, partition index is -1.
 
-    :param new_points: The new points for which to find the nearest neighbor. 
+    :param new_points: The new points for which to find the nearest neighbor.
     Points have to be in the same dimension as the KD tree
     (N=number of points, D=number of dimensions).
     :type np.ndarray (N, D)
@@ -99,7 +99,6 @@ def get_partition_vecorized(new_points: np.ndarray,  kdtree: KDTree,
     # Return the index of the partition for each new point
     partition_indices = np.zeros(new_points.shape[0], dtype=int)
     for partition_idx, partition in enumerate(space_partitions.indices):
-
         # Find the indices in nearest_indices that are in the current partition
         indices_in_partition = np.isin(nearest_indices, partition)
 
@@ -111,8 +110,10 @@ def get_partition_vecorized(new_points: np.ndarray,  kdtree: KDTree,
         partition_indices[indices_in_partition] = partition_idx
 
     # set partition index to -1 if point is outside of min or max range of the KD tree
-    out_of_range = np.logical_or(new_points < space_partitions.mins.min(axis=0),
-                                 new_points > space_partitions.maxes.max(axis=0))
+    out_of_range = np.logical_or(
+        new_points < space_partitions.mins.min(axis=0),
+        new_points > space_partitions.maxes.max(axis=0),
+    )
     partition_indices[out_of_range.any(axis=1)] = -1
     return partition_indices
 
@@ -128,7 +129,7 @@ def get_space_partitions(kdtree: KDTree, mins, maxes) -> KDTreePartitions:
     :param maxes: The maximum values of the range for each dimension.
     :type maxes: array-like
 
-    :return: An object containing the space partitions, 
+    :return: An object containing the space partitions,
     represented by the minimum and maximum values of each partition,
     and the indices of the data points within each partition.
     :rtype: KDTreePartitions
@@ -149,23 +150,30 @@ def get_space_partitions(kdtree: KDTree, mins, maxes) -> KDTreePartitions:
             axis = node.split_dim
             value = node.split
 
-            (left_mins, left_maxes,
-             right_mins, right_maxes) = split_space(axis, value, node_mins, node_maxes)
+            (left_mins, left_maxes, right_mins, right_maxes) = split_space(
+                axis, value, node_mins, node_maxes
+            )
             left_indices = [i for i in indices if kdtree.data[i, axis] <= value]
             right_indices = [i for i in indices if kdtree.data[i, axis] > value]
 
             stack.append((node.greater, right_mins, right_maxes, right_indices))
             stack.append((node.less, left_mins, left_maxes, left_indices))
         else:
-            raise TypeError('Unknown node type')
+            raise TypeError("Unknown node type")
 
-    return KDTreePartitions(mins=np.array(space_partitions_mins),
-                            maxes=np.array(space_partitions_maxes),
-                            indices=data_indices_per_region)
+    return KDTreePartitions(
+        mins=np.array(space_partitions_mins),
+        maxes=np.array(space_partitions_maxes),
+        indices=data_indices_per_region,
+    )
 
 
-def plot_new_points(new_points: np.ndarray, axes: plt.Axes,
-                    space_partitions: KDTreePartitions, partition_idx: np.ndarray) -> plt.Axes:
+def plot_new_points(
+    new_points: np.ndarray,
+    axes: plt.Axes,
+    space_partitions: KDTreePartitions,
+    partition_idx: np.ndarray,
+) -> plt.Axes:
     """
     Plot new point and highlight the region it belongs to.
 
@@ -186,37 +194,47 @@ def plot_new_points(new_points: np.ndarray, axes: plt.Axes,
         new_points = new_points.reshape(1, -1)
 
     # Plot the new point
-    axes.plot(new_points[:, 0], new_points[:, 1], 'o',
-              markerfacecolor='None', markeredgecolor='black', markersize=10)
+    axes.plot(
+        new_points[:, 0],
+        new_points[:, 1],
+        "o",
+        markerfacecolor="None",
+        markeredgecolor="black",
+        markersize=10,
+    )
 
     # get only the region of the new point
     region_mins = np.array(space_partitions.mins)[partition_idx.tolist()]
     region_maxes = np.array(space_partitions.maxes)[partition_idx.tolist()]
     region_indices = None  # not needed for plotting the region
-    single_partition = KDTreePartitions(mins=region_mins,
-                                        maxes=region_maxes,
-                                        indices=region_indices)
+    single_partition = KDTreePartitions(
+        mins=region_mins, maxes=region_maxes, indices=region_indices
+    )
 
     # Plot the KD tree space partitions
-    plot_partitions(axes, space_partitions=single_partition, facecolor='white', edgecolor='gray')
+    plot_partitions(
+        axes, space_partitions=single_partition, facecolor="white", edgecolor="gray"
+    )
 
     return axes
 
 
-def plot_kd_space(space_partitions: KDTreePartitions,
-                  distance_per_partition: np.ndarray,
-                  axes: plt.Axes,
-                  accept_stat_per_region: np.ndarray = None,
-                  norm: mpl.colors.Normalize = None,
-                  extend: str = 'neither',
-                  #   vmax: typing.Union[float, None] = None,
-                  #   vmin: typing.Union[float, None] = None,
-                  cmap: str = 'viridis',
-                  distance_label: str = 'Distance',
-                  # hatch pattern for rejected regions
-                  hatch_type: str = 'x',
-                  #   color_norm: str = 'two_slopes',
-                  ) -> plt.Axes:
+def plot_kd_space(
+    space_partitions: KDTreePartitions,
+    distance_per_partition: np.ndarray,
+    axes: plt.Axes,
+    accept_stat_per_region: np.ndarray = None,
+    norm: mpl.colors.Normalize = None,
+    extend: str = "neither",
+    #   vmax: typing.Union[float, None] = None,
+    #   vmin: typing.Union[float, None] = None,
+    cmap: str = "viridis",
+    distance_label: str = "Distance",
+    # hatch pattern for rejected regions
+    hatch_type: str = "x",
+    cbar_padding: float = 0.15,
+    #   color_norm: str = 'two_slopes',
+) -> plt.Axes:
     """
     Plots the KD tree space partitions with color-coded distances.
 
@@ -243,9 +261,10 @@ def plot_kd_space(space_partitions: KDTreePartitions,
     axes.set_ylim(space_partitions.mins[:, 1].min(), space_partitions.maxes[:, 1].max())
 
     if norm is None:
-        norm = mpl.colors.Normalize(vmin=np.min(distance_per_partition),
-                                    vmax=np.max(distance_per_partition))
-        extend = 'neither'
+        norm = mpl.colors.Normalize(
+            vmin=np.min(distance_per_partition), vmax=np.max(distance_per_partition)
+        )
+        extend = "neither"
     # if vmin is None:
     #     vmin = np.min(distance_per_partition)
     # if vmax is None:
@@ -266,22 +285,34 @@ def plot_kd_space(space_partitions: KDTreePartitions,
     color = cmap(norm(distance_per_partition))
 
     # Plot the KD tree space partitions
-    plot_partitions(axes, space_partitions, facecolor=color,
-                    accept_stat_per_region=accept_stat_per_region, hatch_type=hatch_type)
+    plot_partitions(
+        axes,
+        space_partitions,
+        facecolor=color,
+        accept_stat_per_region=accept_stat_per_region,
+        hatch_type=hatch_type,
+    )
 
     divider = make_axes_locatable(axes)
-    cax = divider.append_axes("right", size="5%", pad=0.15)
+    cax = divider.append_axes("right", size="5%", pad=cbar_padding)
 
-    fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), cax=cax,
-                 ax=axes, label=distance_label, extend=extend)
+    fig.colorbar(
+        mpl.cm.ScalarMappable(norm=norm, cmap=cmap),
+        cax=cax,
+        ax=axes,
+        label=distance_label,
+        extend=extend,
+    )
 
     return axes
 
 
-def print_distances_per_partition(space_partitions: KDTreePartitions,
-                                  distance_per_partition: np.ndarray,
-                                  accept_stat_per_region: np.ndarray = None,
-                                  distance_label: str = 'Distance') -> None:
+def print_distances_per_partition(
+    space_partitions: KDTreePartitions,
+    distance_per_partition: np.ndarray,
+    accept_stat_per_region: np.ndarray = None,
+    distance_label: str = "Distance",
+) -> None:
     """
     Prints the distances per partition along with the number of data points in each partition.
 
@@ -295,30 +326,39 @@ def print_distances_per_partition(space_partitions: KDTreePartitions,
     """
 
     table = PrettyTable()
-    table.float_format = '.5'
+    table.float_format = ".5"
     if accept_stat_per_region is not None:
-        table.field_names = ['Region', distance_label, '# Data Points', 'Accept']
+        table.field_names = ["Region", distance_label, "# Data Points", "Accept"]
     else:
-        table.field_names = ['Region', distance_label, '# Data Points']
+        table.field_names = ["Region", distance_label, "# Data Points"]
     for partition_idx, partition in enumerate(space_partitions.indices):
         if accept_stat_per_region is not None:
-            table.add_row([partition_idx, distance_per_partition[partition_idx], len(partition),
-                           accept_stat_per_region[partition_idx]])
+            table.add_row(
+                [
+                    partition_idx,
+                    distance_per_partition[partition_idx],
+                    len(partition),
+                    accept_stat_per_region[partition_idx],
+                ]
+            )
         else:
-            table.add_row([partition_idx, distance_per_partition[partition_idx], len(partition)])
+            table.add_row(
+                [partition_idx, distance_per_partition[partition_idx], len(partition)]
+            )
 
     print(table)
 
 
-def plot_partitions(axes: plt.Axes,
-                    space_partitions: KDTreePartitions,
-                    edgecolor='gray',
-                    facecolor: typing.Union[np.ndarray, str] = 'None',
-                    accept_stat_per_region: np.ndarray = None,
-                    hatch_type: str = 'x',
-                    region_labels: typing.List[str] = None,
-                    plot_region_labels: bool = True,
-                    ) -> plt.Axes:
+def plot_partitions(
+    axes: plt.Axes,
+    space_partitions: KDTreePartitions,
+    edgecolor="gray",
+    facecolor: typing.Union[np.ndarray, str] = "None",
+    accept_stat_per_region: np.ndarray = None,
+    hatch_type: str = "x",
+    region_labels: typing.List[str] = None,
+    plot_region_labels: bool = True,
+) -> plt.Axes:
     """
     Plot the space partitions of a KD tree on the given axes.
 
@@ -342,7 +382,7 @@ def plot_partitions(axes: plt.Axes,
 
     # make sure facecolor is a list if not string
     if isinstance(facecolor, str):
-        fill = facecolor != 'None'
+        fill = facecolor != "None"
         facecolor = [facecolor] * num_partitions
 
     if accept_stat_per_region is None:
@@ -359,32 +399,40 @@ def plot_partitions(axes: plt.Axes,
 
     # Plot the KD tree space partitions
     for idx in range(num_partitions):
-        rect = plt.Rectangle((space_partitions.mins[idx][0],
-                              space_partitions.mins[idx][1]),
-                             space_partitions.maxes[idx][0] - space_partitions.mins[idx][0],
-                             space_partitions.maxes[idx][1] - space_partitions.mins[idx][1],
-                             facecolor=facecolor[idx],
-                             fill=fill,
-                             # add hatch pattern if accept_stat_per_region is False
-                             hatch=hatch[idx],
-                             edgecolor=edgecolor, linestyle='-', label='Space Partition')
+        rect = plt.Rectangle(
+            (space_partitions.mins[idx][0], space_partitions.mins[idx][1]),
+            space_partitions.maxes[idx][0] - space_partitions.mins[idx][0],
+            space_partitions.maxes[idx][1] - space_partitions.mins[idx][1],
+            facecolor=facecolor[idx],
+            fill=fill,
+            # add hatch pattern if accept_stat_per_region is False
+            hatch=hatch[idx],
+            edgecolor=edgecolor,
+            linestyle="-",
+            label="Space Partition",
+        )
 
         axes.add_patch(rect)
 
         if plot_region_labels:
             # add region label
             if region_labels[idx] is not None:
-                axes.text((space_partitions.mins[idx][0] + space_partitions.maxes[idx][0]) / 2,
-                          (space_partitions.mins[idx][1] + space_partitions.maxes[idx][1]) / 2,
-                          region_labels[idx], ha='center', va='center')
+                axes.text(
+                    (space_partitions.mins[idx][0] + space_partitions.maxes[idx][0])
+                    / 2,
+                    (space_partitions.mins[idx][1] + space_partitions.maxes[idx][1])
+                    / 2,
+                    region_labels[idx],
+                    ha="center",
+                    va="center",
+                )
 
     return axes
 
 
-def split_space(axis: int,
-                split_at_value: float,
-                mins: np.ndarray,
-                maxes: np.ndarray) -> typing.Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+def split_space(
+    axis: int, split_at_value: float, mins: np.ndarray, maxes: np.ndarray
+) -> typing.Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     Splits the space along the given axis at the specified value.
 
@@ -414,8 +462,7 @@ def split_space(axis: int,
     return left_mins, left_maxes, right_mins, right_maxes
 
 
-if __name__ == '__main__':
-
+if __name__ == "__main__":
     # Example usage:
     np.random.seed(2536)
     N_POINTS = 1000
@@ -437,12 +484,21 @@ if __name__ == '__main__':
     output_data = input_data_points[:, 0] + input_data_points[:, 1]
     # simulated predictions from a model
     # y_model = 0.9 * x1 + 1.1 * x2 + noise
-    predictions = 0.9 * input_data_points[:, 0] \
-        + 1.1 * input_data_points[:, 1] + np.random.randn(N_POINTS) * 0.0001
+    predictions = (
+        0.9 * input_data_points[:, 0]
+        + 1.1 * input_data_points[:, 1]
+        + np.random.randn(N_POINTS) * 0.0001
+    )
 
     # Build the KD tree
-    kdtree = KDTree(input_data_points, leafsize=LEAFSIZE, compact_nodes=True,
-                    copy_data=False, balanced_tree=True, boxsize=None)
+    kdtree = KDTree(
+        input_data_points,
+        leafsize=LEAFSIZE,
+        compact_nodes=True,
+        copy_data=False,
+        balanced_tree=True,
+        boxsize=None,
+    )
 
     # Get the min and max values for each dimension
     mins = np.min(input_data_points, axis=0)
@@ -451,50 +507,73 @@ if __name__ == '__main__':
 
     fig, axes = plt.subplots()
     # equal axis scaling
-    axes.set_aspect('equal', 'box')
-    axes.plot(input_data_points[:, 0], input_data_points[:, 1], 'o', label='Data Points',)
-    plot_partitions(axes, space_partitions, facecolor='none', )
-    axes.set_xlabel(r'$x_1$')
-    axes.set_ylabel(r'$x_2$')
-    fig.savefig('kd_regions_raw.svg')
+    axes.set_aspect("equal", "box")
+    axes.plot(
+        input_data_points[:, 0],
+        input_data_points[:, 1],
+        "o",
+        label="Data Points",
+    )
+    plot_partitions(
+        axes,
+        space_partitions,
+        facecolor="none",
+    )
+    axes.set_xlabel(r"$x_1$")
+    axes.set_ylabel(r"$x_2$")
+    fig.savefig("kd_regions_raw.svg")
     plt.close()
 
     # mse per region
     mse_per_partition = np.zeros(len(space_partitions.mins))
     for partition_idx, partition in enumerate(space_partitions.indices):
-        mse_per_partition[partition_idx]\
-            = np.mean((predictions[partition] - output_data[partition])**2)
+        mse_per_partition[partition_idx] = np.mean(
+            (predictions[partition] - output_data[partition]) ** 2
+        )
 
     distance_per_partition = mse_per_partition
     print_distances_per_partition(space_partitions, distance_per_partition)
 
     fig, axes = plt.subplots()
     # equal axis scaling
-    axes.set_aspect('equal', 'box')
-    plot_kd_space(space_partitions, distance_per_partition, axes=axes, distance_label='MSE')
+    axes.set_aspect("equal", "box")
+    plot_kd_space(
+        space_partitions, distance_per_partition, axes=axes, distance_label="MSE"
+    )
 
-    axes.plot(input_data_points[:, 0], input_data_points[:, 1], 'o', label='Data Points',
-              markerfacecolor='None', markeredgecolor='white', alpha=0.25)
+    axes.plot(
+        input_data_points[:, 0],
+        input_data_points[:, 1],
+        "o",
+        label="Data Points",
+        markerfacecolor="None",
+        markeredgecolor="white",
+        alpha=0.25,
+    )
 
     # set axis limits according to (artificial) data mins and maxes
     axes.set_xlim(MIN_DATA, MAX_DATA)
     axes.set_ylim(MIN_DATA, MAX_DATA)
     # set axis labels
-    axes.set_xlabel(r'$x_1$')
-    axes.set_ylabel(r'$x_2$')
-    fig.savefig('kd_regions_dist.svg')
+    axes.set_xlabel(r"$x_1$")
+    axes.set_ylabel(r"$x_2$")
+    fig.savefig("kd_regions_dist.svg")
     plt.close()
 
     test_points = -np.random.randn(10, 2)
 
-    belongs_to_partition = get_partition_vecorized(test_points, kdtree, space_partitions)
+    belongs_to_partition = get_partition_vecorized(
+        test_points, kdtree, space_partitions
+    )
 
     # print(f'Test points: {test_points})')
     # print(f'belong to partition: {belongs_to_partition}')
-    print('if partition index is -1, point is outside of min or max range of the KD tree')
+    print(
+        "if partition index is -1, point is outside of min or max range of the KD tree"
+    )
     # print as pretty table
     table = PrettyTable()
-    table.field_names = ['Test Point', 'Partition Index']
+    table.field_names = ["Test Point", "Partition Index"]
     for test_point, partition_idx in zip(test_points, belongs_to_partition):
         table.add_row([test_point, partition_idx])
 
