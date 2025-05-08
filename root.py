@@ -124,7 +124,10 @@ def main():
     # DATA_ID = 1010  # moon data set
     # 2250 training instances. unbalanced data set
 
-    DATA_ID = 1010
+    # DATA_ID = 2000  # data: 'd2sin_squared_more_points/prior_var_1000' regression
+    # FUSION 2025 paper
+
+    DATA_ID = 2000
 
     x_viz, y_viz_pred_mean, y_viz_pred_cov = None, None, None
     is_logistic_regression = (
@@ -344,7 +347,31 @@ def main():
 
     elif DATA_ID == 2000:
         # data: same as in SDF24 Voronoi paper: used for comparison in FUSION25 paper
-        data_file_name = "voronoi_data"
+        gif_limit = 500
+        data_file_name = "d2sin_squared_more_points/prior_var_1000/"
+
+        # train_method = "mcmc"
+        train_method = "meanfield_svi"
+        min_data = np.array([-2.2, -2.2])  # same limits as in FUSION25 paper
+        max_data = np.array([2.2, 2.2])
+        # train_method = 'pbp'
+        # train_method = 'ukf'
+        # train_method = 'kbnn'
+        file_names = [
+            f"{train_method}_test.pkl",
+            f"{train_method}_test.pkl",
+            "nn_test.pkl",
+            "nn_train.pkl",
+        ]
+
+        ### not used for the mackey glass data; THIS IS NOT THE GT FOR THIS SCENARIO ###
+        def gt_mean(x: np.ndarray, gamma: np.ndarray, delta: float):
+            """Ground truth mean function for the regression scenario."""
+            return np.sin(np.square(x[:, 0]) + np.square(x[:, 1]))
+
+        gamma = None
+        delta = None
+        noise_var = 0.1**2
 
     else:
         raise ValueError("Unknown data id")
@@ -352,7 +379,7 @@ def main():
     # data_folder = 'data/' + data_file_name  # data is stored in the data folder
     data_folder = os.path.join("data", data_file_name)
     data = []
-    if DATA_ID == 1000 or DATA_ID == 1001:
+    if DATA_ID == 1000 or DATA_ID == 1001 or DATA_ID == 2000:
         with open(os.path.join(data_folder + f"{train_method}_test.pkl"), "rb") as f:
             test_predictions = pickle.load(f)
         y_test_pred_mean = np.mean(test_predictions, axis=0)
@@ -1102,6 +1129,23 @@ def main():
     fig.savefig(os.path.join(plot_folder, "kd_regions_raw.svg"), transparent=True)
     plt.close()
 
+    # if scenario number is 2000, use matplotlib settiungs as in Fusion 25 Paper
+    if DATA_ID == 2000:
+        mpl.rcParams.update(mpl.rcParamsDefault)
+        USE_TEX = True
+        height_to_width_ratio = 0.75
+        unscl_fontsize = 12
+        fig_width = 3.0
+        matplotlib_settings.init_settings(
+            use_tex=USE_TEX,
+            height_to_width_ratio=height_to_width_ratio,
+            fig_width=fig_width,
+            unscaled_fontsize=unscl_fontsize,
+        )
+        cbar_padding = 0.5  # used in FUSION 25 Paper
+    else:
+        cbar_padding = 0.15  # used in FUSION 24 Paper and MFI 2024
+
     # space partitioning plot with distance
     fig, axes = plt.subplots()
 
@@ -1117,7 +1161,16 @@ def main():
         norm=norm,
         extend=extend,
         hatch_type=hatch_type,
+        cbar_padding=cbar_padding,
     )
+    if DATA_ID == 2000:
+        max_ticks = 5
+        from matplotlib import ticker
+
+        # get color bar instance from figure
+        cbar = fig.get_children()[1].cbar
+        cbar.locator = ticker.MaxNLocator(nbins=max_ticks)
+        cbar.update_ticks()
 
     if plot_input_data_in_test_plot:
         axes.plot(
