@@ -1151,7 +1151,7 @@ def main():
 
     # equal axis scaling
     axes.set_aspect("equal", "box")
-    kd_tree_partioning.plot_kd_space(
+    _, cbar = kd_tree_partioning.plot_kd_space(
         space_partitions,
         stat_per_region,
         axes=axes,
@@ -1168,7 +1168,7 @@ def main():
         from matplotlib import ticker
 
         # get color bar instance from figure
-        cbar = fig.get_children()[1].cbar
+        # cbar = fig.get_children()[2].cbar
         cbar.locator = ticker.MaxNLocator(nbins=max_ticks)
         cbar.update_ticks()
 
@@ -1194,7 +1194,11 @@ def main():
     axes.set_ylabel(r"$x_2$")
     # fig.savefig(plot_folder + '/kd_regions_dist.svg')
 
-    create_plots.custom_safefig(fig, plot_folder + "/kd_regions_dist.svg")
+    plot_type = ["pdf", "svg"]
+    for p_type in plot_type:
+        create_plots.custom_safefig(
+            fig, os.path.join(plot_folder, f"kd_regions_dist.{p_type}")
+        )
 
     plt.close()
 

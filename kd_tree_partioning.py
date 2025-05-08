@@ -296,7 +296,7 @@ def plot_kd_space(
     divider = make_axes_locatable(axes)
     cax = divider.append_axes("right", size="5%", pad=cbar_padding)
 
-    fig.colorbar(
+    cbar = fig.colorbar(
         mpl.cm.ScalarMappable(norm=norm, cmap=cmap),
         cax=cax,
         ax=axes,
@@ -304,7 +304,7 @@ def plot_kd_space(
         extend=extend,
     )
 
-    return axes
+    return axes, cbar
 
 
 def print_distances_per_partition(
