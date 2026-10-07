@@ -1,0 +1,21 @@
+[project]
+name = "space-partitioning"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "dot2tex>=2.12.0",
+    "graphviz>=0.21",
+    "matplotlib>=3.10.9",
+    "netcal>=1.4.0",
+    "pot>=0.9.7.post1",
+    "prettytable>=3.18.0",
+    "pygraphviz>=2.0.3",
+    "scikit-learn>=1.7.2",
+    "torch>=2.5.1",
+    "tqdm>=4.70.1",
+]
+
+[tool.ruff.lint.pyupgrade]
+non-pep604-annotation-union = true

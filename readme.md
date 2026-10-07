@@ -9,6 +9,24 @@ Submitted to the 27th International Conference on Information Fusion (FUSION 202
 [comment]: < Publication is [online available](https://isas.iar.kit.edu/pdf/SDFMFI23_Walker.pdf) >
 
 
+## dependencies
+listed in pyproject.toml
+
+install using uv, e.g. by uv sync
+
+Additional dependencies may be required when tree structures should be printed.
+Then graphviz is required.
+install via
+
+Windows:
+```
+winget install -e --id Graphviz.Graphviz
+```
+
+Linux:
+```
+sudo apt install graphviz
+```
 
 ## Usage 
 root.py

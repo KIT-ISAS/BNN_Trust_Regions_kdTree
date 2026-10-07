@@ -25,7 +25,8 @@ import distance_stat_wrapper
 import kd_tree_partioning
 import kd_tree_testing
 import matplotlib_settings
-import train_moon
+
+# import train_moon
 import wasserstein_dist
 from kd_tree_graph import KDTreeGraph
 from matplotlib_settings import mark_inset
@@ -41,7 +42,7 @@ def load_data(file: str, folder: str):
     return prediction_results
 
 
-def convert_to_numpy(data_array: typing.Union[torch.Tensor, np.ndarray]):
+def convert_to_numpy(data_array: typing.Union[torch.Tensor, np.ndarray]):  # noqa
     """
     Converts a torch tensor to a numpy array.
 
@@ -743,6 +744,8 @@ def main():
             moon_norm = mpl.colors.Normalize(
                 vmin=0, vmax=1
             )  # classification mean is between 0 and 1
+            import train_moon
+
             train_moon.plot_pred_mean_and_errors(
                 ax,
                 x_in_test=x_test,

@@ -14,3 +14,9 @@ data/data_30.01.2024/X_test_custom_lin_reg.pkl
 data/data_30.01.2024/
 data/mackey_glass_5000_Tr_instances/
 plots/
+
+# ignore data files
+*.pkl
+kalman_bnn.py
+balltree.dot
+balltree.ipynb
