@@ -14,6 +14,11 @@ listed in pyproject.toml
 
 install using uv, e.g. by uv sync
 
+The explicit setuptools module list installs the flat public modules, including
+`kd_tree_testing`, `kd_tree_partioning`, `distance_measures` and
+`distance_stat_wrapper`. Editable and wheel installs therefore support normal
+standalone imports without relying on a caller's pytest `pythonpath`.
+
 Additional dependencies may be required when tree structures should be printed.
 Then graphviz is required.
 install via

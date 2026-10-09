@@ -14,7 +14,7 @@ def distance_calculation(prediction: typing.Union[np.ndarray, distance_measures.
                          indices: typing.List[int],
                          method: str = 'anees',
                          alpha: float = 0.01,  # significance level; only used for anees
-                         m_bins: int = 1,  # number of bins for ece
+                         m_bins: int = 1,  # number of bins for uce/ece
                          ):
     """ Calculate the distance measure and statistical tests per region.
 
@@ -29,7 +29,8 @@ def distance_calculation(prediction: typing.Union[np.ndarray, distance_measures.
     :type method: str
     :param alpha: Significance level; only used for anees.
     :type alpha: float
-    :param m_bins: Number of bins for ece.
+    :param m_bins: Number of bins for uce/ece. Single-bin UCE is the absolute
+        difference between regional mean squared error and predictive variance.
     :type m_bins: int
     :return: Distance measure and statistical tests per region.
     :rtype: tuple[np.ndarray, np.ndarray]
@@ -72,10 +73,25 @@ def distance_calculation(prediction: typing.Union[np.ndarray, distance_measures.
         # Well-calibrated regression uncertainty in medical imaging with deep learning.
         # In: Medical Imaging with Deep Learning. pp. 393–412. PMLR (2020)
 
+        if m_bins == 1:
+            if isinstance(prediction, distance_measures.Gaussian):
+                mean = prediction.mean.reshape(-1)
+                variance = prediction.cov.reshape(-1)
+            else:
+                mean = np.mean(prediction, axis=0)
+                variance = np.var(prediction, axis=0)
+            error = np.square(mean - output_data.reshape(-1))
+            for idx_partition, indices_per_partition in enumerate(indices):
+                stat_per_region[idx_partition] = abs(
+                    np.mean(error[indices_per_partition])
+                    - np.mean(variance[indices_per_partition])
+                )
+            return stat_per_region, None
+
         if isinstance(prediction, distance_measures.Gaussian):
             if prediction.mean.ndim == 1:
                 pred_mean = copy.deepcopy(prediction.mean.reshape(-1, 1))
-                pred_cov = copy.deepcopy(prediction.cov.reshape(-1, 1))
+                pred_cov = np.sqrt(prediction.cov.reshape(-1, 1))
 
         uce = UCE(bins=m_bins)
 

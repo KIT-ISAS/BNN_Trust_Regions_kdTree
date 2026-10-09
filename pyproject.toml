@@ -19,3 +19,15 @@ dependencies = [
 
 [tool.ruff.lint.pyupgrade]
 non-pep604-annotation-union = true
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+py-modules = [
+    "balltree", "balltree_construction", "cmap_norm_plot_settings",
+    "create_plots", "distance_measures", "distance_stat_wrapper",
+    "kd_tree_graph", "kd_tree_partioning", "kd_tree_testing",
+    "matplotlib_settings", "root", "wasserstein_dist",
+]
